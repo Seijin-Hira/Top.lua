@@ -1,223 +1,295 @@
--- Serviços necessários
+-- // Variáveis
+local usuario = game.Players.LocalPlayer.Name
 local Players = game:GetService("Players")
-local CoreGui = game:GetService("CoreGui")
-local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
-
+local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
+local Mouse = LocalPlayer:GetMouse()
 
--- Variáveis globais
-local suspeitos = {}
+-- // UI
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Parent = game.CoreGui
 
--- Função para detectar jogadores suspeitos
-local function detectarHackers()
-    suspeitos = {}
-    for _, player in pairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer then
-            local isModified = false
-            local isUsingExecutor = false
+-- // Função para criar botão estilizado
+function criarBotao(parent, texto, pos, tamanho, func)
+    local botao = Instance.new("ImageButton")
+    botao.Parent = parent
+    botao.Image = "rbxassetid://3570695787" -- Imagem de botão escuro
+    botao.ImageColor3 = Color3.fromRGB(45, 45, 45)
+    botao.ScaleType = Enum.ScaleType.Slice
+    botao.SliceCenter = Rect.new(100, 100, 100, 100)
+    botao.Position = pos
+    botao.Size = tamanho
 
-            -- Detecção básica de executores
-            if not isfile or not isfolder or not readfile or not writefile then
-                isUsingExecutor = true
+    local text = Instance.new("TextLabel")
+    text.Parent = botao
+    text.BackgroundTransparency = 1
+    text.Position = UDim2.new(0, 10, 0, 0)
+    text.Size = UDim2.new(1, -20, 1, 0)
+    text.Font = Enum.Font.GothamBold
+    text.Text = texto
+    text.TextColor3 = Color3.fromRGB(255, 255, 255)
+    text.TextSize = 14
+    text.TextWrapped = true
+
+    botao.MouseButton1Down:Connect(func)
+end
+
+-- // Função para criar caixa de texto
+function criarTextBox(parent, texto, pos, tamanho)
+    local box = Instance.new("TextBox")
+    box.Parent = parent
+    box.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    box.BorderColor3 = Color3.fromRGB(0, 0, 0)
+    box.BorderSizePixel = 2
+    box.Position = pos
+    box.Size = tamanho
+    box.Font = Enum.Font.GothamBold
+    box.PlaceholderText = texto
+    box.Text = ""
+    box.TextColor3 = Color3.fromRGB(255, 255, 255)
+    box.TextSize = 14
+    return box
+end
+
+-- // Função para criar label
+function criarLabel(parent, texto, pos, tamanho)
+    local label = Instance.new("TextLabel")
+    label.Parent = parent
+    label.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+    label.BorderColor3 = Color3.fromRGB(0, 0, 0)
+    label.BorderSizePixel = 2
+    label.Position = pos
+    label.Size = tamanho
+    label.Font = Enum.Font.GothamBold
+    label.Text = texto
+    label.TextColor3 = Color3.fromRGB(255, 255, 255)
+    label.TextSize = 14
+    return label
+end
+
+-- // Função para criar aba com imagem de fundo
+function criarAba(nome, pos)
+    local aba = Instance.new("Frame")
+    aba.Parent = ScreenGui
+    aba.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    aba.BorderColor3 = Color3.fromRGB(0, 0, 0)
+    aba.BorderSizePixel = 2
+    aba.Position = pos
+    aba.Size = UDim2.new(0, 250, 0, 400)
+    aba.Active = true
+    aba.Draggable = true
+
+    -- Imagem de fundo
+    local background = Instance.new("ImageLabel")
+    background.Parent = aba
+    background.Image = "rbxassetid://2151745514" -- Fundo escuro
+    background.ImageColor3 = Color3.fromRGB(25, 25, 25)
+    background.BackgroundTransparency = 1
+    background.Size = UDim2.new(1, 0, 1, 0)
+
+    -- Título
+    local abaTitulo = Instance.new("TextLabel")
+    abaTitulo.Parent = aba
+    abaTitulo.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+    abaTitulo.BorderColor3 = Color3.fromRGB(0, 0, 0)
+    abaTitulo.BorderSizePixel = 2
+    abaTitulo.Size = UDim2.new(1, 0, 0, 30)
+    abaTitulo.Font = Enum.Font.GothamBold
+    abaTitulo.Text = nome
+    abaTitulo.TextColor3 = Color3.fromRGB(255, 255, 255)
+    abaTitulo.TextSize = 16
+    abaTitulo.TextWrapped = true
+
+    return aba
+end
+
+-- // Funções de Teleporte
+function teleport(pos)
+    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        LocalPlayer.Character.HumanoidRootPart.CFrame = pos
+    end
+end
+
+-- // Função para voar
+local flying = false
+local flyspeed = 10
+local bv, bg
+
+function startFly()
+    if flying then return end
+    flying = true
+    local char = LocalPlayer.Character
+    if not char then return end
+
+    bv = Instance.new("BodyVelocity")
+    bv.Parent = char.HumanoidRootPart
+    bv.MaxForce = Vector3.new(4000, 4000, 4000)
+    bv.Velocity = Vector3.new()
+
+    bg = Instance.new("BodyGyro")
+    bg.Parent = char.HumanoidRootPart
+    bg.MaxTorque = Vector3.new(4000, 4000, 4000)
+    bg.P = 1000
+    bg.D = 100
+    bg.I = 0
+    bg.ObjectCFrame = char.HumanoidRootPart.CFrame
+
+    RunService.Stepped:Connect(function()
+        if flying then
+            bv.Velocity = ((UserInputService:IsKeyDown(Enum.KeyCode.W) and Vector3.new(0, 0, -flyspeed)) or
+                          (UserInputService:IsKeyDown(Enum.KeyCode.S) and Vector3.new(0, 0, flyspeed)) or Vector3.new(0, 0, 0)) +
+                         ((UserInputService:IsKeyDown(Enum.KeyCode.A) and Vector3.new(-flyspeed, 0, 0)) or
+                          (UserInputService:IsKeyDown(Enum.KeyCode.D) and Vector3.new(flyspeed, 0, 0)) or Vector3.new(0, 0, 0)) +
+                         ((UserInputService:IsKeyDown(Enum.KeyCode.Space) and Vector3.new(0, flyspeed, 0)) or
+                          (UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) and Vector3.new(0, -flyspeed, 0)) or Vector3.new(0, 0, 0))
+
+            bg.ObjectCFrame = Mouse.Hit * CFrame.Angles(-math.rad(90), 0, 0)
+        end
+    end)
+end
+
+function stopFly()
+    if bv then bv:Destroy() end
+    if bg then bg:Destroy() end
+    flying = false
+end
+
+-- // Função para matar jogador
+function killPlayer(nome)
+    if nome == "all" then
+        for _,v in pairs(Players:GetPlayers()) do
+            if v ~= LocalPlayer then
+                local char = v.Character
+                if char and char:FindFirstChild("Head") then
+                    firetouchinterest(LocalPlayer.Character.HumanoidRootPart, char.Head, 0)
+                    wait(0.1)
+                    firetouchinterest(LocalPlayer.Character.HumanoidRootPart, char.Head, 1)
+                end
             end
-
-            if player.UserId < 0 then
-                isModified = true
-            end
-
-            if isUsingExecutor or isModified then
-                table.insert(suspeitos, player.Name)
+        end
+    else
+        local v = Players:FindFirstChild(nome)
+        if v then
+            local char = v.Character
+            if char and char:FindFirstChild("Head") then
+                firetouchinterest(LocalPlayer.Character.HumanoidRootPart, char.Head, 0)
+                wait(0.1)
+                firetouchinterest(LocalPlayer.Character.HumanoidRootPart, char.Head, 1)
             end
         end
     end
 end
 
--- Função para criar o menu principal
-local function criarMenu()
-    local mainFrame = Instance.new("ScreenGui")
-    mainFrame.Name = "AntiHackMenu"
-    mainFrame.ResetOnSpawn = false
-    mainFrame.Parent = CoreGui
+-- // Função para puxar arma
+function pullWeapon(nome)
+    local player = LocalPlayer
+    local backpack = player:FindFirstChild("Backpack")
+    local character = player.Character
+    if not character or not backpack then return end
 
-    -- Frame principal do menu (centralizado)
-    local frame = Instance.new("Frame")
-    frame.Size = UDim2.new(0, 250, 0, 350)
-    frame.Position = UDim2.new(0.5, -125, 0.5, -175) -- Centralizado
-    frame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-    frame.BorderSizePixel = 0
-    frame.ClipsDescendants = false -- Permitir arrastar
-    frame.Draggable = true -- Arrastável
-    frame.Parent = mainFrame
-
-    -- Barra superior para fechar
-    local topBar = Instance.new("Frame")
-    topBar.Size = UDim2.new(1, 0, 0, 30)
-    topBar.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-    topBar.Parent = frame
-
-    local closeBtn = Instance.new("TextButton")
-    closeBtn.Size = UDim2.new(0, 30, 0, 30)
-    closeBtn.Position = UDim2.new(1, -35, 0, -5)
-    closeBtn.Text = "✖"
-    closeBtn.Font = Enum.Font.SourceSansBold
-    closeBtn.TextSize = 20
-    closeBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
-    closeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    closeBtn.BorderSizePixel = 0
-    closeBtn.Parent = topBar
-
-    closeBtn.MouseButton1Click:Connect(function()
-        frame.Visible = false
-        mainFrame.ReopenButton.Visible = true
-    end)
-
-    -- Texto principal
-    local title = Instance.new("TextLabel")
-    title.Size = UDim2.new(1, 0, 0, 30)
-    title.Position = UDim2.new(0, 0, 0, 40)
-    title.Text = "Anti-Hack Menu"
-    title.Font = Enum.Font.SourceSansBold
-    title.TextSize = 20
-    title.TextColor3 = Color3.fromRGB(255, 255, 255)
-    title.BackgroundTransparency = 1
-    title.Parent = frame
-
-    -- Botão Detectar Hackers
-    local detectBtn = Instance.new("TextButton")
-    detectBtn.Size = UDim2.new(0.8, 0, 0, 40)
-    detectBtn.Position = UDim2.new(0.1, 0, 0, 80)
-    detectBtn.Text = "Detectar Hackers"
-    detectBtn.Font = Enum.Font.SourceSansBold
-    detectBtn.TextSize = 16
-    detectBtn.BackgroundColor3 = Color3.fromRGB(50, 150, 255)
-    detectBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    detectBtn.BorderSizePixel = 0
-    detectBtn.Parent = frame
-
-    detectBtn.MouseButton1Click:Connect(function()
-        detectarHackers()
-        mostrarSuspeitos()
-    end)
-
-    -- Dropdown de expulsão
-    local dropdown = Instance.new("TextBox")
-    dropdown.Size = UDim2.new(0.8, 0, 0, 30)
-    dropdown.Position = UDim2.new(0.1, 0, 0, 140)
-    dropdown.PlaceholderText = "Nome do Hacker"
-    dropdown.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-    dropdown.TextColor3 = Color3.fromRGB(255, 255, 255)
-    dropdown.BorderSizePixel = 0
-    dropdown.Parent = frame
-
-    -- Botão Kickar
-    local kickBtn = Instance.new("TextButton")
-    kickBtn.Size = UDim2.new(0.8, 0, 0, 40)
-    kickBtn.Position = UDim2.new(0.1, 0, 0, 180)
-    kickBtn.Text = "Kickar Hacker"
-    kickBtn.Font = Enum.Font.SourceSansBold
-    kickBtn.TextSize = 16
-    kickBtn.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
-    kickBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    kickBtn.BorderSizePixel = 0
-    kickBtn.Parent = frame
-
-    kickBtn.MouseButton1Click:Connect(function()
-        local nome = dropdown.Text
-        local jogador = Players:FindFirstChild(nome)
-        if jogador then
-            game:GetService("Chat"):Chat(workspace.CurrentCamera, jogador.Name .. " está usando hack!", Enum.ChatColor.Red)
-            pcall(function()
-                jogador:Kick("Você foi expulso por uso de hack.")
-            end)
-        end
-    end)
-
-    -- Botão Reabrir (Mobile)
-    local reopenBtn = Instance.new("TextButton")
-    reopenBtn.Name = "ReopenButton"
-    reopenBtn.Size = UDim2.new(0, 60, 0, 60)
-    reopenBtn.Position = UDim2.new(0.9, -65, 0.9, -65)
-    reopenBtn.Text = "📁"
-    reopenBtn.Font = Enum.Font.SourceSansBold
-    reopenBtn.TextSize = 24
-    reopenBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-    reopenBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    reopenBtn.BorderSizePixel = 0
-    reopenBtn.Visible = false
-    reopenBtn.Parent = mainFrame
-
-    reopenBtn.MouseButton1Click:Connect(function()
-        frame.Visible = true
-        reopenBtn.Visible = false
-    end)
-
-    -- Evento para esconder/mostrar botão de reabrir
-    frame.Changed:Connect(function(prop)
-        if prop == "Visible" then
-            if not frame.Visible then
-                reopenBtn.Visible = true
-            end
-        end
-    end)
-end
-
--- Função para exibir jogadores suspeitos em janela flutuante e arrastável
-local function mostrarSuspeitos()
-    local susFrame = Instance.new("Frame")
-    susFrame.Size = UDim2.new(0, 220, 0, 250)
-    susFrame.Position = UDim2.new(0.5, -110, 0.5, -125) -- Centralizado
-    susFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-    susFrame.BorderSizePixel = 0
-    susFrame.ClipsDescendants = false
-    susFrame.Draggable = true
-    susFrame.Parent = game.CoreGui.AntiHackMenu
-
-    -- Barra superior para fechar
-    local topBar = Instance.new("Frame")
-    topBar.Size = UDim2.new(1, 0, 0, 30)
-    topBar.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-    topBar.Parent = susFrame
-
-    local closeBtn = Instance.new("TextButton")
-    closeBtn.Size = UDim2.new(0, 30, 0, 30)
-    closeBtn.Position = UDim2.new(1, -35, 0, -5)
-    closeBtn.Text = "✖"
-    closeBtn.Font = Enum.Font.SourceSansBold
-    closeBtn.TextSize = 20
-    closeBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
-    closeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    closeBtn.BorderSizePixel = 0
-    closeBtn.Parent = topBar
-
-    closeBtn.MouseButton1Click:Connect(function()
-        susFrame:Destroy()
-    end)
-
-    local title = Instance.new("TextLabel")
-    title.Size = UDim2.new(1, 0, 0, 20)
-    title.Position = UDim2.new(0, 0, 0, 35)
-    title.Text = "Jogadores Suspeitos:"
-    title.Font = Enum.Font.SourceSansBold
-    title.TextSize = 16
-    title.TextColor3 = Color3.fromRGB(255, 255, 255)
-    title.BackgroundTransparency = 1
-    title.Parent = susFrame
-
-    local index = 1
-    for _, name in pairs(suspeitos) do
-        local nameTag = Instance.new("TextLabel")
-        nameTag.Size = UDim2.new(1, 0, 0, 20)
-        nameTag.Position = UDim2.new(0, 0, 0, 35 + (index * 25))
-        nameTag.Text = "• " .. name
-        nameTag.Font = Enum.Font.SourceSans
-        nameTag.TextSize = 14
-        nameTag.TextColor3 = Color3.fromRGB(255, 100, 100)
-        nameTag.BackgroundTransparency = 1
-        nameTag.Parent = susFrame
-        index = index + 1
+    local tool = game.ReplicatedStorage.Items:FindFirstChild(nome)
+    if tool then
+        tool:Clone().Parent = backpack
     end
 end
 
--- Iniciar o menu
-criarMenu()
+-- // Função para puxar carro
+function pullCar()
+    local car = game.ReplicatedStorage.Vehicles["Offroad Car"]:Clone()
+    car.Parent = workspace
+    car:MoveTo(LocalPlayer.Character.HumanoidRootPart.Position + Vector3.new(0, 5, 0))
+end
+
+-- // Função para criar NPC
+function spawnNPC(npcType)
+    local npc = game.ReplicatedStorage.NPCs:FindFirstChild(npcType)
+    if npc then
+        local clone = npc:Clone()
+        clone.Parent = workspace
+        clone:MoveTo(LocalPlayer.Character.HumanoidRootPart.Position + Vector3.new(5, 0, 0))
+    end
+end
+
+-- // Carregar aba comum
+if usuario ~= "feernando01ap" then
+    local aba = criarAba("Menu Comum", UDim2.new(0, 10, 0, 10))
+
+    criarBotao(aba, "Puxar Espingarda", UDim2.new(0, 20, 0, 50), UDim2.new(0, 210, 0, 40), function()
+        pullWeapon("Shotgun")
+    end)
+
+    criarBotao(aba, "Puxar AK47", UDim2.new(0, 20, 0, 100), UDim2.new(0, 210, 0, 40), function()
+        pullWeapon("AK47")
+    end)
+
+    criarBotao(aba, "TP Cela", UDim2.new(0, 20, 0, 150), UDim2.new(0, 210, 0, 40), function()
+        teleport(workspace.Cells[LocalPlayer.Name].CFrame)
+    end)
+
+    criarBotao(aba, "TP Fora da Prisão", UDim2.new(0, 20, 0, 200), UDim2.new(0, 210, 0, 40), function()
+        teleport(workspace["Prison_Free"].CFrame)
+    end)
+
+-- // Carregar aba VIP
+else
+    local aba = criarAba("Menu VIP", UDim2.new(0, 10, 0, 10))
+
+    -- Teleportes
+    criarBotao(aba, "TP Cela", UDim2.new(0, 20, 0, 50), UDim2.new(0, 210, 0, 40), function()
+        teleport(workspace.Cells[LocalPlayer.Name].CFrame)
+    end)
+
+    criarBotao(aba, "TP Topo da Prisão", UDim2.new(0, 20, 0, 100), UDim2.new(0, 210, 0, 40), function()
+        teleport(workspace.Prison_Main.CFrame * CFrame.new(0, 50, 0))
+    end)
+
+    criarBotao(aba, "TP Fora da Prisão", UDim2.new(0, 20, 0, 150), UDim2.new(0, 210, 0, 40), function()
+        teleport(workspace["Prison_Free"].CFrame)
+    end)
+
+    criarBotao(aba, "TP Base Bandidos", UDim2.new(0, 20, 0, 200), UDim2.new(0, 210, 0, 40), function()
+        teleport(workspace["Criminal Base"].CFrame)
+    end)
+
+    -- Voar
+    criarBotao(aba, "Voar (Ativar)", UDim2.new(0, 20, 0, 250), UDim2.new(0, 210, 0, 40), function()
+        startFly()
+    end)
+
+    criarBotao(aba, "Voar (Desativar)", UDim2.new(0, 20, 0, 300), UDim2.new(0, 210, 0, 40), function()
+        stopFly()
+    end)
+
+    -- Armas
+    criarBotao(aba, "Puxar Espingarda", UDim2.new(0, 20, 0, 50), UDim2.new(0, 210, 0, 40), function()
+        pullWeapon("Shotgun")
+    end)
+
+    criarBotao(aba, "Puxar AK47", UDim2.new(0, 20, 0, 100), UDim2.new(0, 210, 0, 40), function()
+        pullWeapon("AK47")
+    end)
+
+    criarBotao(aba, "Puxar Carro", UDim2.new(0, 20, 0, 150), UDim2.new(0, 210, 0, 40), function()
+        pullCar()
+    end)
+
+    -- Matar
+    local killBox = criarTextBox(aba, "Nome ou 'all'", UDim2.new(0, 20, 0, 200), UDim2.new(0, 210, 0, 30))
+    criarBotao(aba, "Matar", UDim2.new(0, 20, 0, 240), UDim2.new(0, 210, 0, 40), function()
+        killPlayer(killBox.Text)
+    end)
+
+    -- Criar NPCs
+    criarBotao(aba, "Criar Guarda", UDim2.new(0, 20, 0, 290), UDim2.new(0, 210, 0, 40), function()
+        spawnNPC("Guard")
+    end)
+
+    criarBotao(aba, "Criar Bandido", UDim2.new(0, 20, 0, 340), UDim2.new(0, 210, 0, 40), function()
+        spawnNPC("Mobster")
+    end)
+
+    criarBotao(aba, "Criar Prisioneiro", UDim2.new(0, 20, 0, 390), UDim2.new(0, 210, 0, 40), function()
+        spawnNPC("Inmate")
+    end)
+end
